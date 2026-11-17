@@ -5,6 +5,7 @@ namespace Lab02.App
     public partial class Form1 : Form
     {
         private readonly ArchiveService _archiveService = new ArchiveService();
+        private readonly Button btnAddResearcherToProject = new Button();
         private void LoadProjects()
         {
             dgvProjects.DataSource = _archiveService.GetProjects();
@@ -50,6 +51,11 @@ namespace Lab02.App
         public Form1()
         {
             InitializeComponent();
+            btnAddResearcherToProject.Text = "Додати до проєкту";
+            btnAddResearcherToProject.Location = new Point(430, 8);
+            btnAddResearcherToProject.Size = new Size(160, 29);
+            panel2.Controls.Add(btnAddResearcherToProject);
+            btnAddResearcherToProject.Click += (s, e) => AddResearcherToProject();
             _archiveService.InitializeDatabase();
             btnRefreshProjects.Click += (s, e) => LoadProjects();
             btnRefreshDatasets.Click += (s, e) => LoadDatasets();
@@ -400,6 +406,57 @@ namespace Lab02.App
             {
                 _archiveService.DeleteResearcher(row.Id);
                 LoadResearchers();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Помилка");
+            }
+        }
+        private void AddResearcherToProject()
+        {
+            if (dgvResearchers.CurrentRow?.DataBoundItem is not ResearcherRow row)
+            {
+                MessageBox.Show("Оберіть дослідника.");
+                return;
+            }
+
+            var projects = GetProjectOptions();
+
+            if (projects.Count == 0)
+            {
+                MessageBox.Show("Спочатку додайте хоча б один проєкт.");
+                return;
+            }
+
+            using var dialog = new InputDialog("Додавання до проєкту",
+                new[] { "Роль", "Рівень доступу" },
+                projects: projects);
+
+            if (dialog.ShowDialog() != DialogResult.OK)
+                return;
+
+            if (dialog.SelectedProjectId == null)
+            {
+                MessageBox.Show("Оберіть проєкт.");
+                return;
+            }
+
+            if (dialog.Values.Any(string.IsNullOrWhiteSpace))
+            {
+                MessageBox.Show("Заповніть роль та рівень доступу.");
+                return;
+            }
+
+            try
+            {
+                _archiveService.AddResearcherToProject(
+                    dialog.SelectedProjectId.Value,
+                    row.Id,
+                    dialog.Values[0],
+                    dialog.Values[1]);
+
+                LoadResearchers();
+                MessageBox.Show("Дослідника успішно додано до проєкту.");
             }
             catch (Exception ex)
             {

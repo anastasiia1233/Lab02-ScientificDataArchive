@@ -243,6 +243,29 @@ public class ArchiveService
         db.Researchers.Remove(researcher);
         db.SaveChanges();
     }
+    public void AddResearcherToProject(int projectId, int researcherId, string role, string accessLevel)
+    {
+        using var db = new AppDbContext();
+
+        if (db.ResearchProjects.Find(projectId) == null)
+            throw new Exception("Проєкт не знайдено.");
+
+        if (db.Researchers.Find(researcherId) == null)
+            throw new Exception("Дослідника не знайдено.");
+
+        if (db.ProjectMembers.Any(pm => pm.ResearchProjectId == projectId && pm.ResearcherId == researcherId))
+            throw new Exception("Цей дослідник уже доданий до проєкту.");
+
+        db.ProjectMembers.Add(new ProjectMember
+        {
+            ResearchProjectId = projectId,
+            ResearcherId = researcherId,
+            Role = role,
+            AccessLevel = accessLevel
+        });
+
+        db.SaveChanges();
+    }
 
 }
 
